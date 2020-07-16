@@ -72,7 +72,7 @@ GROUP BY O.CUS_ID
 -- 분석함수와 집계함수의 차이
 -- COUNT(*) AS BY_CUS_ORD_CNT: 고객별 주문건수, GROUP BY의 CUS_ID별 집계를 수행하는 집계함수
 -- COUNT(*) OVER() AS ALL_CUST_CNT: 조회된 고객 수, 분석 대상의 데이터 건수를 세는 분석함수
--- COUNT(*) AS BY_CUS_ORD_CNT
+-- SUM(COUNT(*)) OVER() AS BY_CUS_ORD_CNT
 -- : 고객별 주문건수에 대한 합
 -- : 안쪽의 COUNT(*)는 CUS_ID별 집계를 수행하는 집계함수
 -- : 바깥쪽의 SUM() OVER()는 CUS_ID별 COUNT(*)에 대한 분석 함수
@@ -168,3 +168,41 @@ AND O.ORD_DT < TO_DATE('20170601', 'YYYYMMDD')
 GROUP BY O.CUS_ID, TO_CHAR(O.ORD_DT, 'YYYYMM')
 ORDER BY O.CUS_ID, TO_CHAR(O.ORD_DT, 'YYYYMM')
 ;
+
+-- OVER ORDER BY
+-- 각 로우별로 ORDER BY에 따라 분석 대상이 다르게 정해짐
+-- OVER 절 안에 ORDER BY가 있으면 ORDER BY 기준으로 자신보다 먼저 조회된 데이터가 분석대상이 됨
+-- 특정 고객의 3월부터 8월까지의 6개월 간의 주문 조회, 월별 누적주문금액을 같이 표시
+-- 누적주문금액
+-- 3월 누적주문금액은 3월 주문금액과 동일
+-- 4월 누적주문금액은 3월과 4월 주문금액 합계
+-- 8월 누적주문금액은 3~8월의 주문금액 합계
+SELECT
+	TO_CHAR(O.ORD_DT, 'YYYYMM') AS ORD_YM
+	, SUM(O.ORD_AMT) AS ORD_AMT
+	, SUM(SUM(O.ORD_AMT)) OVER(ORDER BY TO_CHAR(O.ORD_DT, 'YYYYMM')) AS ORD_YM_SUM
+FROM T_ORD O
+WHERE O.CUS_ID = 'CUS_0002'
+AND O.ORD_DT >= TO_DATE('20170301', 'YYYYMMDD')
+AND O.ORD_DT < TO_DATE('20170901', 'YYYYMMDD')
+GROUP BY O.CUS_ID, TO_CHAR(O.ORD_DT, 'YYYYMM')
+ORDER BY O.CUS_ID, TO_CHAR(O.ORD_DT, 'YYYYMM')
+;
+
+-- ORDER BY, PARTITION BY와 동시 사용 가능
+-- 분석대상을 PARTITION BY로 나눈 후 나누어진 단위별로 ORDER BY를 처리함
+-- PARTITION BY가 ORDER BY보다 먼저 와야 함
+-- PARTITION BY에 대상 컬럼을 콤마로 구분해서 적은 후 파티션의 마지막 컬럼과 ORDER BY 사이에 콤마를 사용하면 안됨
+-- OVER(PARTITION BY O.CUS_ID, O.ORD_ST, O.PAY_TP ORDER BY O.ORD_AMT)
+SELECT
+    O.CUS_ID
+	, TO_CHAR(O.ORD_DT, 'YYYYMM') AS ORD_YM
+	, SUM(O.ORD_AMT) AS ORD_AMT
+ 	, SUM(SUM(O.ORD_AMT)) OVER(PARTITION BY O.CUS_ID) AS BY_CUST_AMT
+	, SUM(SUM(O.ORD_AMT)) OVER(PARTITION BY O.CUS_ID ORDER BY TO_CHAR(O.ORD_DT, 'YYYYMM')) AS BY_CUS_ORD_YM_SUM
+FROM T_ORD O
+WHERE O.CUS_ID IN ('CUS_0002', 'CUS_0003')
+AND O.ORD_DT >= TO_DATE('20170301', 'YYYYMMDD')
+AND O.ORD_DT < TO_DATE('20170601', 'YYYYMMDD')
+GROUP BY O.CUS_ID, TO_CHAR(O.ORD_DT, 'YYYYMM')
+ORDER BY O.CUS_ID, TO_CHAR(O.ORD_DT, 'YYYYMM')
