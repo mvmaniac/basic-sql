@@ -208,7 +208,7 @@ GROUP BY MC.CUS_ID
 -- : 일반적으로 두개의 테이블 조인하면 한 번의 조인 과정만 나옴
 -- 5번 단계를 보면 INDEX SKIP SCAN 이 있는데 인덱스를 이용해 데이터를 검색하는 방법 중 하나
 -- X_T_ORD_JOIN은 CUS_ID, ORD_YMD 순서로 구성되어 있는데 SQL에 CUS_ID에 대한 조건이 없고 ORD_YMD에 대한 조건만 존재하므로 INDEX SKIP SCAN를 활용하게 된 것
--- ORD_YMD가 선두인 인덱스를 만들어 INDEX RANGE SCAN이 나아도록 하는 것 이 좋음
+-- ORD_YMD가 선두인 인덱스를 만들어 INDEX RANGE SCAN이 나오도록 하는 것 이 좋음
 -- 6번 단계의 Starts를 보면 12,000 번의 후행 집합에 대한 접근이 발생하는데 그 말은 M_CUS에는 INDEX_RANGE_SCAN이 12,000번 발생하고 있음
 -- 성능 개선을 위해서라면 12,000번의 접근 횟수를 줄일 필요가 있음
 /*

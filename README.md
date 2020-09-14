@@ -6,7 +6,7 @@
 
 ### 2. 차이점
 
-* Oracle12c 기준
+* Oracle18c 기준
 
 ### 3. TODO
 
